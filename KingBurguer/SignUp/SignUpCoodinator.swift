@@ -14,6 +14,7 @@ class SignUpCoodinator {
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
+        navigationController.navigationBar.tintColor = .text
     }
     
     func start() {

@@ -9,6 +9,29 @@ import UIKit
 
 class SignInViewController: UIViewController {
     
+    private lazy var scrollView: UIScrollView = {
+        let scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.backgroundColor = .background
+        return scrollView
+    }()
+    
+    private lazy var contentView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    
+    private var stackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis = .vertical
+        stackView.backgroundColor = .clear
+        stackView.spacing = 20
+        stackView.alignment = .center
+        return stackView
+    }()
+    
     private var logoImageView: UIImageView = {
         let logo = UIImageView()
         logo.translatesAutoresizingMaskIntoConstraints = false
@@ -58,16 +81,6 @@ class SignInViewController: UIViewController {
         return button
     }()
     
-    private var stackView: UIStackView = {
-        let stackView = UIStackView()
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        stackView.axis = .vertical
-        stackView.backgroundColor = .clear
-        stackView.spacing = 20
-        stackView.alignment = .center
-        return stackView
-    }()
-    
     private var footerLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -82,7 +95,7 @@ class SignInViewController: UIViewController {
             signInViewModel?.delegate = self
         }
     }
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -91,10 +104,13 @@ class SignInViewController: UIViewController {
         view.backgroundColor = .background
         setupHierarchy()
         setupConstraints()
-        navigationItem.title = "Login"
+        setupKeyboardObservers()
+        setupDismissKeyboardOnTap()
+        navigationItem.title = ""
     }
     
     func setupHierarchy() {
+        
         stackView.addArrangedSubview(logoImageView)
         stackView.addArrangedSubview(emailTextField)
         stackView.addArrangedSubview(passwordTextField)
@@ -103,17 +119,31 @@ class SignInViewController: UIViewController {
         
         stackView.addArrangedSubview(footerLabel)
         
-        view.addSubview(stackView)
-//        view.addSubview(footerLabel)
+        contentView.addSubview(stackView)
+        
+        scrollView.addSubview(contentView)
+        
+        view.addSubview(scrollView)
     }
     
     func setupConstraints() {
         NSLayoutConstraint.activate([
             
-            stackView.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
-            stackView.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
-            stackView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             
             logoImageView.heightAnchor.constraint(equalToConstant: 256),
             logoImageView.widthAnchor.constraint(equalToConstant: 256),
@@ -134,9 +164,40 @@ class SignInViewController: UIViewController {
             registerButton.leadingAnchor.constraint(equalTo: stackView.leadingAnchor, constant: 80),
             registerButton.heightAnchor.constraint(equalToConstant: 50),
             
-//            footerLabel.bottomAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 10),
+            //            footerLabel.bottomAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 10),
             footerLabel.centerXAnchor.constraint(equalTo: stackView.centerXAnchor),
         ])
+    }
+    
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(notification:)), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(notification:)), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+    
+    func setupDismissKeyboardOnTap() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+    }
+    
+    @objc private func keyboardWillShow(notification: Notification) {
+        if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+            scrollView.contentInset.bottom = keyboardFrame.height + 20
+            print("Teclado apareceu")
+        }
+    }
+    
+    @objc private func keyboardWillHide(notification: Notification) {
+        scrollView.contentInset.bottom = 0
+        print("Teclado sumiu")
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func dismissKeyboard() {
+        view.endEditing(true)
     }
     
     // Evento de touch
@@ -147,7 +208,7 @@ class SignInViewController: UIViewController {
     @objc func registerDidTap(_ sender: UIButton) {
         signInViewModel?.goToSignUp()
     }
-
+    
 }
 
 extension SignInViewController: SignInViewModelDelegate {

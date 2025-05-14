@@ -10,6 +10,18 @@ import UIKit
 
 class SignUpViewController: UIViewController, ViewControllerProtocol {
     
+    private lazy var scrollView: UIScrollView = {
+        let scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        return scrollView
+    }()
+    
+    private lazy var contentView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    
     private var stackView: UIStackView = {
         let stackView = UIStackView()
         stackView.translatesAutoresizingMaskIntoConstraints = false
@@ -48,12 +60,39 @@ class SignUpViewController: UIViewController, ViewControllerProtocol {
         return passwordTextField
     }()
     
-    private lazy var ufStatePickerView: UIPickerView = {
-        let pickerView = UIPickerView()
-        pickerView.translatesAutoresizingMaskIntoConstraints = false
-        pickerView.delegate = self
-        pickerView.dataSource = self
-        return pickerView
+    private lazy var cpfTextField: UITextField = {
+        let textField = UITextField()
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        textField.placeholder = "CPF"
+        textField.borderStyle = .roundedRect
+        textField.backgroundColor = .white
+        return textField
+    }()
+    
+    private lazy var stackViewDateOfBirth: UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.spacing = 1
+        stackView.distribution = .fillProportionally
+        stackView.alignment = .center
+        return stackView
+    }()
+    
+    private lazy var dateOfBirthLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "Data de Nascimento"
+        label.numberOfLines = 1
+        label.font = .systemFont(ofSize: 14, weight: .regular)
+        return label
+    }()
+    
+    private lazy var dateOfBirth: UIDatePicker = {
+        let datePicker = UIDatePicker()
+        datePicker.translatesAutoresizingMaskIntoConstraints = false
+        datePicker.datePickerMode = .date
+        datePicker.maximumDate = .now
+        return datePicker
     }()
     
     private lazy var registerButton: UIButton = {
@@ -71,22 +110,35 @@ class SignUpViewController: UIViewController, ViewControllerProtocol {
         super.viewDidLoad()
         view.backgroundColor = .background
         navigationItem.title = "Criar Conta"
-        navigationItem.titleView?.tintColor = .text
         
-//        ufStatePickerView.delegate = self
-//        ufStatePickerView.dataSource = self
         
         setupHierarchy()
         setupConstraints()
-        
+        setupKeyboardObservers()
+        setupDismissKeyboardOnTap()
     }
     
     func setupConstraints() {
         NSLayoutConstraint.activate([
-            stackView.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
-            stackView.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
-            stackView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            
+            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            
+            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            
+            stackViewDateOfBirth.leadingAnchor.constraint(equalTo: stackView.leadingAnchor, constant: 40),
+            stackViewDateOfBirth.trailingAnchor.constraint(equalTo: stackView.trailingAnchor, constant: -40),
             
             fullNameTextField.trailingAnchor.constraint(equalTo: stackView.trailingAnchor, constant: -40),
             fullNameTextField.leadingAnchor.constraint(equalTo: stackView.leadingAnchor, constant: 40),
@@ -100,13 +152,14 @@ class SignUpViewController: UIViewController, ViewControllerProtocol {
             passwordTextField.leadingAnchor.constraint(equalTo: stackView.leadingAnchor, constant: 40),
             passwordTextField.heightAnchor.constraint(equalToConstant: 50),
             
+            cpfTextField.trailingAnchor.constraint(equalTo: stackView.trailingAnchor, constant: -40),
+            cpfTextField.leadingAnchor.constraint(equalTo: stackView.leadingAnchor, constant: 40),
+            cpfTextField.heightAnchor.constraint(equalToConstant: 50),
+            
             registerButton.trailingAnchor.constraint(equalTo: stackView.trailingAnchor, constant: -40),
             registerButton.leadingAnchor.constraint(equalTo: stackView.leadingAnchor, constant: 40),
             registerButton.heightAnchor.constraint(equalToConstant: 50),
             
-//            ufStatePickerView.trailingAnchor.constraint(equalTo: stackView.trailingAnchor, constant: -40),
-//            ufStatePickerView.leadingAnchor.constraint(equalTo: stackView.leadingAnchor, constant: 40),
-//            ufStatePickerView.heightAnchor.constraint(equalToConstant: 100),
         ])
     }
     
@@ -114,29 +167,54 @@ class SignUpViewController: UIViewController, ViewControllerProtocol {
         stackView.addArrangedSubview(fullNameTextField)
         stackView.addArrangedSubview(emailTextField)
         stackView.addArrangedSubview(passwordTextField)
-        stackView.addArrangedSubview(registerButton)
-        //stackView.addArrangedSubview(ufStatePickerView)
+        stackView.addArrangedSubview(cpfTextField)
         
-        view.addSubview(stackView)
+        stackViewDateOfBirth.addArrangedSubview(dateOfBirthLabel)
+        stackViewDateOfBirth.addArrangedSubview(dateOfBirth)
+        stackView.addArrangedSubview(stackViewDateOfBirth)
+        
+        stackView.addArrangedSubview(registerButton)
+        
+        contentView.addSubview(stackView)
+        
+        scrollView.addSubview(contentView)
+        
+        view.addSubview(scrollView)
+    }
+    
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(notification:)), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(notification:)), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+    
+    func setupDismissKeyboardOnTap() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+    }
+    
+    @objc private func keyboardWillShow(notification: Notification) {
+        if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+            scrollView.contentInset.bottom = keyboardFrame.height + 20
+            print("Teclado apareceu")
+        }
+    }
+    
+    @objc private func keyboardWillHide(notification: Notification) {
+        scrollView.contentInset.bottom = 0
+        print("Teclado sumiu")
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func dismissKeyboard() {
+        view.endEditing(true)
     }
     
     @objc func registerDidTap(_ sender: UIButton) {
         
     }
     
-}
-
-extension SignUpViewController: UIPickerViewDelegate, UIPickerViewDataSource {
-    
-    func numberOfComponents(in pickerView: UIPickerView) -> Int {
-        return 1
-    }
-    
-    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
-        return BrazilianState.allCases.count
-    }
-    
-    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-        return BrazilianState.allCases[row].name
-    }
 }
