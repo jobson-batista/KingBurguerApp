@@ -7,7 +7,7 @@
 
 import UIKit
 
-class SignUpCoodinator {
+class SignUpCoordinator {
     
     private var navigationController = UINavigationController()
     
@@ -18,7 +18,12 @@ class SignUpCoodinator {
     }
     
     func start() {
+        
+        let viewModel = SignUpViewModel()
+        viewModel.coordinator = self
+        
         let signUpViewController = SignUpViewController()
+        signUpViewController.viewModel = viewModel
         
         navigationController.pushViewController(signUpViewController, animated: true)
     }

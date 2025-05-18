@@ -29,11 +29,15 @@ class SignInViewModel {
         // Funcao para aguardar 2 segundos
         // Semelhante ao sleep() em python
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            self.state = .error("Usuario nao existe")
+            self.state = .goToHome
         }
     }
     
     func goToSignUp() {
         coordinator?.signUp()
+    }
+    
+    func goToHome() {
+        coordinator?.home()
     }
 }

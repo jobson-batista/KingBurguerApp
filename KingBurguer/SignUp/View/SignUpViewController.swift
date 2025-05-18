@@ -66,6 +66,7 @@ class SignUpViewController: UIViewController, ViewControllerProtocol {
         textField.placeholder = "CPF"
         textField.borderStyle = .roundedRect
         textField.backgroundColor = .white
+        textField.keyboardType = .numberPad
         return textField
     }()
     
@@ -87,7 +88,7 @@ class SignUpViewController: UIViewController, ViewControllerProtocol {
         return label
     }()
     
-    private lazy var dateOfBirth: UIDatePicker = {
+    private lazy var dateOfBirthDatePicker: UIDatePicker = {
         let datePicker = UIDatePicker()
         datePicker.translatesAutoresizingMaskIntoConstraints = false
         datePicker.datePickerMode = .date
@@ -106,12 +107,17 @@ class SignUpViewController: UIViewController, ViewControllerProtocol {
         return button
     }()
     
+    var viewModel: SignUpViewModel? {
+        didSet {
+            viewModel?.delegate = self
+        }
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .background
         navigationItem.title = "Criar Conta"
-        
-        
+                
         setupHierarchy()
         setupConstraints()
         setupKeyboardObservers()
@@ -170,7 +176,7 @@ class SignUpViewController: UIViewController, ViewControllerProtocol {
         stackView.addArrangedSubview(cpfTextField)
         
         stackViewDateOfBirth.addArrangedSubview(dateOfBirthLabel)
-        stackViewDateOfBirth.addArrangedSubview(dateOfBirth)
+        stackViewDateOfBirth.addArrangedSubview(dateOfBirthDatePicker)
         stackView.addArrangedSubview(stackViewDateOfBirth)
         
         stackView.addArrangedSubview(registerButton)
@@ -214,7 +220,29 @@ class SignUpViewController: UIViewController, ViewControllerProtocol {
     }
     
     @objc func registerDidTap(_ sender: UIButton) {
-        
+        viewModel?.send()
     }
     
+}
+
+extension SignUpViewController: SignUpViewModelDelegate {
+    
+    func viewModelDidChanged(state: SignUpSate) {
+        Log.info("o estado da viewmodel SignUp é \(state)")
+        switch state {
+        case .none:
+            break
+        case .loading:
+            // mostrar progresso
+            break
+        case .goToHome:
+            // navegar para a tela principal
+            break
+        case .error(let msg):
+            let alert = UIAlertController(title: "Titulo", message: msg, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Ok", style: .default))
+            self.present(alert, animated: true)
+            break
+        }
+    }
 }
